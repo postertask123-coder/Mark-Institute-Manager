@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Education Institute Manager</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#687386;--primary:#2457e6;--primary2:#163da8;--green:#16a36a;--red:#e05252;--border:#e3e8f0}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}button{cursor:pointer;border:0}
+.topbar{background:linear-gradient(135deg,#163da8,#2457e6);color:#fff;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:5}
+.brand{font-weight:800;font-size:20px}.admin-badge{background:rgba(255,255,255,.16);padding:7px 10px;border-radius:999px;font-size:13px}
+.container{max-width:1200px;margin:auto;padding:24px}
+.page-title{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:20px}.page-title h1{margin:0;font-size:28px}.sub{color:var(--muted);margin-top:5px}
+.btn{background:var(--primary);color:#fff;padding:11px 15px;border-radius:9px;font-weight:700}.btn.secondary{background:#e9eefc;color:#2146b5}.btn.danger{background:#ffe9e9;color:#b52e2e}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:22px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:0 3px 12px rgba(20,35,70,.05)}
+.teacher-grid,.grade-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.click-card{transition:.15s;cursor:pointer}.click-card:hover{transform:translateY(-2px);border-color:#b9c8f7}
+.avatar{width:48px;height:48px;border-radius:50%;background:#e7edff;color:#2457e6;display:grid;place-items:center;font-weight:800;margin-bottom:14px}
+.click-card h3{margin:0 0 5px}.click-card p{margin:0;color:var(--muted)}
+.back{margin-bottom:16px;color:#2457e6;background:none;padding:0;font-weight:700}
+.hidden{display:none!important}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0}
+select,input{border:1px solid var(--border);background:#fff;border-radius:9px;padding:10px 12px}
+.table-wrap{overflow:auto;background:#fff;border:1px solid var(--border);border-radius:14px}
+table{border-collapse:collapse;width:100%;min-width:900px}th,td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:center;white-space:nowrap}th{background:#f6f8fc;font-size:13px}td:first-child,th:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:3;min-width:190px;width:190px;box-shadow:2px 0 5px rgba(20,35,70,.06)}
+th:first-child{background:#f6f8fc;z-index:4}
+.table-wrap{position:relative;overflow:auto}
+.student-name{font-weight:700}.status{width:38px;height:34px;border-radius:7px;font-weight:800;background:#f1f3f7;color:#9aa3b2}.status:disabled{cursor:default;opacity:1}.status.paid{background:#dff7eb;color:#138457}.status.attn{background:#fff0c9;color:#a46b00}
+.chart-grid{display:grid;grid-template-columns:1fr;gap:18px;margin-top:20px}.chart-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px}.chart-card h3{margin-top:0}.chart-box{height:330px}
+.modal{position:fixed;inset:0;background:rgba(8,18,38,.48);display:grid;place-items:center;padding:20px;z-index:20}.modal-box{background:#fff;border-radius:15px;padding:22px;width:min(450px,100%)}.modal-box h2{margin-top:0}.form-row{display:grid;gap:7px;margin:12px 0}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.notice{padding:12px 14px;border-radius:10px;background:#eef4ff;color:#24468f;margin-bottom:16px}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(135deg,#102d7e,#2f6bff)}.login-box{background:#fff;width:min(420px,100%);padding:30px;border-radius:18px}.login-box h1{margin-top:0}.login-box .btn{width:100%;margin-top:8px}
+@media(max-width:800px){.table-wrap td:first-child,.table-wrap th:first-child{min-width:150px;width:150px}.container{padding:16px}.chart-grid{grid-template-columns:1fr}.page-title{align-items:flex-start;flex-direction:column}.topbar{padding:14px 16px}.brand{font-size:17px}}
+.teacher-card-head{flex-wrap:wrap}
+.teacher-card-head .btn.small{white-space:nowrap}.public-view{min-height:100vh;background:var(--bg)}.public-view .topbar{position:sticky;top:0}.public-view .container{padding-top:28px}.public-view .click-card{cursor:default}.public-view .click-card:hover{transform:none}.public-view .public-teacher-photo{width:72px;height:72px;border-radius:50%;background:#e7edff;color:#2457e6;display:grid;place-items:center;font-weight:800;margin-bottom:14px;overflow:hidden}.public-view .public-teacher-photo img{width:100%;height:100%;object-fit:cover;display:block}.public-view .public-teacher-card h3{margin:0}.public-view .public-teacher-card p{margin:7px 0 0;color:var(--muted)}
+.public-view .public-teacher-card{cursor:pointer;transition:.15s}.public-view .public-teacher-card:hover{transform:translateY(-2px);border-color:#b9c8f7}
+.public-detail-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:0 3px 12px rgba(20,35,70,.05);cursor:pointer;transition:.15s}.public-detail-card:hover{transform:translateY(-2px);border-color:#b9c8f7}
+.public-detail-card h3{margin:0 0 6px}.public-detail-card p{margin:0;color:var(--muted)}
+.public-payment-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:0 3px 12px rgba(20,35,70,.05);margin-top:18px}.public-payment-card h3{margin:0 0 6px}.public-payment-note{color:var(--muted);margin:0 0 14px}.public-chart-grid{margin-top:18px}.public-payment-table{overflow:auto;border:1px solid var(--border);border-radius:12px}.public-payment-table table{min-width:760px}.public-payment-table th,.public-payment-table td{padding:10px 8px;text-align:center}.public-payment-table th:first-child,.public-payment-table td:first-child{text-align:left;position:sticky;left:0;min-width:170px;width:170px;background:#fff;z-index:2}.public-payment-table th:first-child{background:#f6f8fc;z-index:3}.public-paid{color:#138457;font-weight:900;font-size:24px}.public-pending{color:#d97706;font-weight:900;font-size:24px}.public-unpaid{color:#a0a7b3}</style>
+</head>
+<body>
+
+<div id="publicView" class="public-view">
+  <header class="topbar"><div class="brand" id="publicBrandName">My Education Institute</div><button class="btn secondary" onclick="showAdminLogin()">Admin Login</button></header>
+  <main class="container">
+    <div class="page-title"><div><h1>Our Teachers</h1><div class="sub">Meet our teaching team.</div></div></div>
+    <div id="publicTeacherGrid" class="teacher-grid"></div>
+    <div id="publicEmpty" class="notice hidden">Teacher information is being loaded.</div>
+  </main>
+</div>
+
+<div id="publicTeacherPage" class="public-view hidden">
+  <header class="topbar"><div class="brand" id="publicTeacherBrand">My Education Institute</div><button class="btn secondary" onclick="showPublicView()">← Teachers</button></header>
+  <main class="container">
+    <button class="back" onclick="showPublicView()">← Back to teachers</button>
+    <div class="page-title"><div><h1 id="publicTeacherTitle">Teacher</h1><div class="sub">Select a grade to view its public information.</div></div></div>
+    <div id="publicGradeGrid" class="grade-grid"></div>
+  </main>
+</div>
+
+<div id="publicGradePage" class="public-view hidden">
+  <header class="topbar"><div class="brand" id="publicGradeBrand">My Education Institute</div><button class="btn secondary" onclick="showPublicView()">← Teachers</button></header>
+  <main class="container">
+    <button class="back" onclick="openPublicTeacher(currentPublicTeacherId)">← Back to grades</button>
+    <div class="page-title"><div><h1 id="publicGradeTitle">Grade</h1><div class="sub" id="publicGradeSub"></div></div></div>
+    <div class="public-payment-card">
+      <h3>Fee Payment Status</h3>
+      <div id="publicPaymentTable" class="public-payment-table"></div>
+    </div>
+    <div class="chart-grid public-chart-grid">
+      <div class="chart-card"><h3>Monthly Fee Collection</h3><div class="chart-box"><canvas id="publicIncomeChart"></canvas></div></div>
+      <div class="chart-card"><h3>Fee Status</h3><div class="chart-box"><canvas id="publicFeeChart"></canvas></div></div>
+    </div>
+  </main>
+</div>
+
+<div id="loginView" class="login hidden">
+  <div class="login-box">
+    <h1>Institute Manager</h1>
+    <p class="sub">Secure admin sign in</p>
+    <div class="form-row"><label>Email</label><input id="email" type="email" autocomplete="username" placeholder="Enter your email"></div>
+    <div class="form-row"><label>Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Enter your password"></div>
+    <button class="btn" onclick="login()">Sign in</button>
+    <p id="loginError" style="color:#c33"></p>
+    <small>Sign in using the email and password created in Firebase Authentication.</small>
+    <button class="btn secondary" style="width:100%;margin-top:14px" onclick="showPublicView()">← Back to Teachers</button>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+<header class="topbar"><div class="brand" id="brandName">My Education Institute</div><div style="display:flex;gap:8px;align-items:center"><div style="display:flex;gap:8px;align-items:center"><div class="admin-badge" id="cloudStatus">Connecting...</div><div class="admin-badge" id="accessBadge">Viewer mode</div></div><button class="btn secondary" style="padding:7px 10px" onclick="logout()">Log out</button></div></header>
+<main class="container">
+
+<section id="homePage">
+  <div class="page-title"><div><h1>Teachers</h1><div class="sub">Select a teacher to view their classes.</div></div>
+  <div id="teacherActions" style="display:flex;flex-wrap:wrap;gap:8px"></div></div>
+  <div id="teacherGrid" class="teacher-grid"></div>
+</section>
+
+<section id="gradePage" class="hidden">
+  <button class="back" onclick="showPage('homePage')">← Back to teachers</button>
+  <div class="page-title"><div><h1 id="teacherTitle"></h1><div class="sub">Select a grade.</div></div>
+  <div id="gradeActions"></div></div>
+  <div id="gradeGrid" class="grade-grid"></div>
+</section>
+
+<section id="classPage" class="hidden">
+  <button class="back" onclick="openTeacher(currentTeacherId)">← Back to grades</button>
+  <div class="page-title">
+    <div><h1 id="classTitle"></h1><div class="sub" id="classSub"></div></div>
+    <div class="toolbar" id="classActions"></div>
+  </div>
+  <div class="card student-overview" style="margin:16px 0">
+  <h3 style="margin-top:0">Students</h3>
+  <div id="studentList"></div>
+  <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+    <b>Payment Status</b>
+    <div style="display:flex;flex-wrap:wrap;gap:18px;margin-top:9px;color:var(--muted)">
+      <span><b style="color:#138457">✓</b> = Paid</span>
+      <span><b style="color:#a46b00">!</b> = Pending</span>
+      <span>Blank = Not updated</span>
+    </div>
+  </div>
+</div>
+  <div class="table-wrap"><table><thead><tr><th>Student</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th></tr></thead>
+<tbody id="studentTable"></tbody></table></div>
+  <div class="chart-grid">
+    <div class="chart-card"><h3>Monthly Fee Collection</h3><div class="chart-box"><canvas id="incomeChart"></canvas></div></div>
+    <div class="chart-card"><h3>Fee Status</h3><div class="chart-box"><canvas id="feeChart"></canvas></div></div>
+  </div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<div id="modal" class="modal hidden"><div class="modal-box"><h2 id="modalTitle"></h2><div id="modalBody"></div><div class="modal-actions"><button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn" id="modalSave">Save</button></div></div></div>
+
+<script>
+const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const defaultData={
+ institute:"My Education Institute",
+ teachers:[
+  {id:1,name:"Teacher 1",grades:[{id:101,name:"Grade 6",fee:2000,students:[]},{id:102,name:"Grade 7",fee:2000,students:[]}]},
+  {id:2,name:"Teacher 2",grades:[{id:201,name:"Grade 8",fee:2500,students:[]},{id:202,name:"Grade 9",fee:2500,students:[]}]},
+  {id:3,name:"Teacher 3",grades:[{id:301,name:"Grade 10",fee:3000,students:[]},{id:302,name:"Grade 11",fee:3000,students:[]}]}
+ ]};
+
+const firebaseConfig={
+ apiKey:"AIzaSyBt0-2LlxxNfKUlDct-3zdICi5Qd_aqwIU",
+ authDomain:"mark-institute-manager.firebaseapp.com",
+ databaseURL:"https://mark-institute-manager-default-rtdb.firebaseio.com",
+ projectId:"mark-institute-manager",
+ storageBucket:"mark-institute-manager.firebasestorage.app",
+ messagingSenderId:"1095673146633",
+ appId:"1:1095673146633:web:62577df636b8ae5fa2b7d8"
+};
+
+const firebaseApp=firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+const auth=firebase.auth();
+const dataRef=db.ref("instituteData");
+const publicTeachersRef=db.ref("publicData/teachers");
+const publicInstituteRef=db.ref("publicData/institute");
+const publicDataRef=db.ref("publicData");
+let cloudReady=false;
+let cloudLoading=true;
+let data=JSON.parse(localStorage.getItem("instituteData")||JSON.stringify(defaultData));
+let publicTeachers=[];
+
+function normalizeData(){
+ if(!data || !Array.isArray(data.teachers)) data=JSON.parse(JSON.stringify(defaultData));
+ data.teachers.forEach(t=>{
+  t.grades=Array.isArray(t.grades)?t.grades:[];
+  t.grades.forEach(g=>{
+   g.students=(g.students||[]).filter(s=>!['Student 1','Student 2','Student 3'].includes(String(s.name).trim()));
+   g.students.forEach(s=>{if(!Array.isArray(s.status))s.status=Array(12).fill(0);});
+  });
+ });
+ data.schemaVersion=4;
+}
+normalizeData();
+localStorage.setItem("instituteData",JSON.stringify(data));
+
+let currentTeacherId=null,currentGradeId=null,currentPublicTeacherId=null,currentPublicGradeId=null,incomeChart,feeChart,currentRole="viewer";
+const save=()=>{
+ normalizeData();
+ localStorage.setItem("instituteData",JSON.stringify(data));
+ if(cloudReady && auth.currentUser){
+  const publicData={
+   institute:data.institute,
+   teachers:(data.teachers||[]).map(t=>({
+    id:t.id,
+    name:t.name||"Teacher",
+    photo:t.photo||"",
+    grades:(t.grades||[]).map(g=>({
+     id:g.id,
+     name:g.name||"Grade",
+     fee:Number(g.fee)||0,
+     students:(g.students||[]).map(s=>({id:s.id,name:s.name||"Student",status:Array.isArray(s.status)?s.status.slice(0,12):Array(12).fill(0)}))
+    }))
+   }))
+  };
+  Promise.all([dataRef.set(data),publicDataRef.set(publicData)]).catch(err=>{
+   console.error(err);
+   alert("Could not save to Firebase. Check your Realtime Database rules/internet connection.");
+  });
+ }
+};
+
+function publicTeacherData(){
+ return (data.teachers||[]).map(t=>({id:t.id,name:t.name||"Teacher",photo:t.photo||""}));
+}
+function renderPublicTeachers(){
+ const grid=document.getElementById("publicTeacherGrid");
+ const empty=document.getElementById("publicEmpty");
+ if(!grid) return;
+ if(publicTeachers.length){
+  empty.classList.add("hidden");
+  grid.innerHTML=publicTeachers.map(t=>`<div class="card public-teacher-card" onclick="openPublicTeacher(${t.id})"><div class="public-teacher-photo">${t.photo?`<img src="${t.photo}" alt="${esc(t.name)}">`:initials(t.name)}</div><h3>${esc(t.name)}</h3><p>Tap to view grades</p></div>`).join("");
+ }else{
+  grid.innerHTML="";
+  empty.classList.remove("hidden");
+ }
+}
+
+publicTeachersRef.on("value",snapshot=>{
+ const remote=snapshot.val();
+ if(Array.isArray(remote)){
+  publicTeachers=remote;
+ }else if(remote && typeof remote === "object"){
+  publicTeachers=Object.keys(remote).map(k=>remote[k]).filter(Boolean);
+ }else{
+  publicTeachers=[];
+ }
+ renderPublicTeachers();
+},err=>{
+ console.error("Public teacher read failed:",err);
+ const empty=document.getElementById("publicEmpty");
+ if(empty){empty.textContent="Teacher information is currently unavailable.";empty.classList.remove("hidden");}
+});
+
+publicInstituteRef.on("value",snapshot=>{
+ const institute=snapshot.val();
+ const brand=document.getElementById("publicBrandName");
+ if(brand && institute) brand.textContent=institute;
+},err=>console.error("Public institute name read failed:",err));
+
+function refreshCurrentView(){
+ if(document.getElementById("app").classList.contains("hidden")) return;
+ if(!document.getElementById("classPage").classList.contains("hidden") && currentGradeId!==null){openGrade(currentGradeId);}
+ else if(!document.getElementById("gradePage").classList.contains("hidden") && currentTeacherId!==null){openTeacher(currentTeacherId);}
+ else renderTeachers();
+}
+
+function startAdminDataListener(){
+ dataRef.off();
+ cloudReady=false;
+ cloudLoading=true;
+ dataRef.on("value",snapshot=>{
+  const remote=snapshot.val();
+  if(remote){
+   data=remote;
+   normalizeData();
+   localStorage.setItem("instituteData",JSON.stringify(data));
+  }else{
+   normalizeData();
+   dataRef.set(data).catch(err=>console.error("Initial Firebase upload failed:",err));
+  }
+  cloudReady=true;
+  cloudLoading=false;
+  if(auth.currentUser){
+   publicDataRef.set({
+    institute:data.institute,
+    teachers:(data.teachers||[]).map(t=>({
+     id:t.id,
+     name:t.name||"Teacher",
+     photo:t.photo||"",
+     grades:(t.grades||[]).map(g=>({
+      id:g.id,
+      name:g.name||"Grade",
+      fee:Number(g.fee)||0,
+      students:(g.students||[]).map(s=>({id:s.id,name:s.name||"Student",status:Array.isArray(s.status)?s.status.slice(0,12):Array(12).fill(0)}))
+     }))
+    }))
+   }).catch(err=>console.error("Public data sync failed:",err));
+  }
+  document.getElementById("brandName").textContent=data.institute;
+  document.title=data.institute;
+  const status=document.getElementById("cloudStatus");
+  if(status) status.textContent="✓ Connected to cloud";
+  refreshCurrentView();
+ },err=>{
+  console.error("Firebase read failed:",err);
+  cloudLoading=false;
+  const status=document.getElementById("cloudStatus");
+  if(status){status.textContent="⚠ Cloud connection failed";status.style.background="#ffe9e9";status.style.color="#b52e2e";}
+ });
+}
+
+function stopAdminDataListener(){
+ dataRef.off();
+ cloudReady=false;
+ cloudLoading=true;
+}
+
+document.getElementById("brandName").textContent=data.institute;
+document.getElementById("publicBrandName").textContent=data.institute;
+document.title=data.institute;
+
+function showAdminLogin(){
+ document.getElementById("publicView").classList.add("hidden");
+ document.getElementById("loginView").classList.remove("hidden");
+ document.getElementById("email").focus();
+}
+function showPublicView(){
+ document.getElementById("loginView").classList.add("hidden");
+ document.getElementById("app").classList.add("hidden");
+ document.getElementById("publicView").classList.remove("hidden");
+ document.getElementById("publicTeacherPage").classList.add("hidden");
+ document.getElementById("publicGradePage").classList.add("hidden");
+}
+function openPublicTeacher(id){
+ const t=publicTeachers.find(x=>String(x.id)===String(id));
+ if(!t) return;
+ currentPublicTeacherId=id;
+ document.getElementById("publicView").classList.add("hidden");
+ document.getElementById("publicGradePage").classList.add("hidden");
+ document.getElementById("publicTeacherPage").classList.remove("hidden");
+ document.getElementById("publicTeacherBrand").textContent=document.getElementById("publicBrandName").textContent;
+ document.getElementById("publicTeacherTitle").textContent=t.name;
+ const grades=Array.isArray(t.grades)?t.grades:[];
+ const grid=document.getElementById("publicGradeGrid");
+ grid.innerHTML=grades.length ? grades.map(g=>`<div class="public-detail-card" onclick="openPublicGrade(${t.id},${g.id})"><h3>${esc(g.name)}</h3><p>Tap to view grade information</p></div>`).join("") : '<div class="notice">No grades have been published for this teacher yet.</div>';
+}
+let publicIncomeChart=null,publicFeeChart=null;
+function openPublicGrade(teacherId,gradeId){
+ const t=publicTeachers.find(x=>String(x.id)===String(teacherId));
+ if(!t) return;
+ const g=(t.grades||[]).find(x=>String(x.id)===String(gradeId));
+ if(!g) return;
+ currentPublicTeacherId=teacherId;
+ currentPublicGradeId=gradeId;
+ document.getElementById("publicView").classList.add("hidden");
+ document.getElementById("publicTeacherPage").classList.add("hidden");
+ document.getElementById("publicGradePage").classList.remove("hidden");
+ document.getElementById("publicGradeBrand").textContent=document.getElementById("publicBrandName").textContent;
+ document.getElementById("publicGradeTitle").textContent=g.name;
+ document.getElementById("publicGradeSub").textContent=t.name+" · Public grade information";
+ renderPublicPaymentTable(g);
+ renderPublicCharts(g);
+}
+function renderPublicPaymentTable(g){
+ const box=document.getElementById("publicPaymentTable");
+ if(!box) return;
+ const students=Array.isArray(g.students)?g.students:[];
+ if(!students.length){
+  box.innerHTML='<div style="padding:22px;color:var(--muted);text-align:center">No student payment information has been published for this grade yet.</div>';
+  return;
+ }
+ box.innerHTML='<table><thead><tr><th>Student</th>'+months.map(m=>'<th>'+m+'</th>').join('')+'</tr></thead><tbody>'+students.map(s=>{
+  const status=Array.isArray(s.status)?s.status:Array(12).fill(0);
+  return '<tr><td class="student-name">'+esc(s.name)+'</td>'+months.map((_,i)=>{const v=Number(status[i])||0;return '<td class="'+(v===1?'public-paid':v===2?'public-pending':'public-unpaid')+'">'+(v===1?'✓':v===2?'!':'—')+'</td>';}).join('')+'</tr>';
+ }).join('')+'</tbody></table>';
+}
+function renderPublicCharts(g){
+ const incomeBox=document.getElementById("publicIncomeChart")?.parentElement;
+ const feeBox=document.getElementById("publicFeeChart")?.parentElement;
+ if(publicIncomeChart){publicIncomeChart.destroy();publicIncomeChart=null;}
+ if(publicFeeChart){publicFeeChart.destroy();publicFeeChart=null;}
+ if(!incomeBox || !feeBox) return;
+ const students=Array.isArray(g.students)?g.students:[];
+ if(!students.length){
+  incomeBox.innerHTML='<div style="height:330px;display:grid;place-items:center;color:var(--muted);text-align:center">No fee data yet.</div>';
+  feeBox.innerHTML='<div style="height:330px;display:grid;place-items:center;color:var(--muted);text-align:center">No fee data yet.</div>';
+  return;
+ }
+ incomeBox.innerHTML='<canvas id="publicIncomeChart"></canvas>';
+ feeBox.innerHTML='<canvas id="publicFeeChart"></canvas>';
+ const fee=Number(g.fee)||0;
+ const collected=months.map((_,m)=>students.filter(s=>(Number((s.status||[])[m])||0)===1).length*fee);
+ const pending=months.map((_,m)=>students.filter(s=>(Number((s.status||[])[m])||0)===2).length*fee);
+ const collectedTotal=collected.reduce((a,b)=>a+b,0);
+ const pendingTotal=pending.reduce((a,b)=>a+b,0);
+ publicIncomeChart=new Chart(document.getElementById("publicIncomeChart"),{
+  type:"bar",
+  data:{labels:months,datasets:[{label:"Collected",data:collected},{label:"Pending",data:pending}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom"},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+": Rs. "+Number(ctx.raw).toLocaleString("en-US")}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>"Rs. "+Number(v).toLocaleString("en-US")}}},onClick:function(event){
+    const points=this.getElementsAtEventForMode(event,"index",{intersect:false},false);
+    if(!points.length || !publicFeeChart) return;
+    const monthIndex=points[0].index;
+    publicFeeChart.data.datasets[0].data=[collected[monthIndex],pending[monthIndex]];
+    publicFeeChart.options.plugins.title={display:true,text:months[monthIndex]+" Fee Status"};
+    publicFeeChart.update();
+  }}
+ });
+ publicFeeChart=new Chart(document.getElementById("publicFeeChart"),{
+  type:"pie",
+  data:{labels:["Collected","Pending"],datasets:[{data:[collectedTotal,pendingTotal]}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:"All Months Fee Status"},legend:{position:"bottom"},tooltip:{callbacks:{label:ctx=>ctx.label+": Rs. "+Number(ctx.raw).toLocaleString("en-US")}}}}
+ });
+}
+
+function login(){
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value;
+  const error=document.getElementById("loginError");
+  error.textContent="";
+  if(!email || !password){error.textContent="Please enter your email and password.";return;}
+  auth.signInWithEmailAndPassword(email,password).catch(err=>{
+    console.error(err);
+    const messages={
+      "auth/invalid-email":"Please enter a valid email address.",
+      "auth/user-not-found":"No Firebase account was found for this email.",
+      "auth/wrong-password":"Incorrect password.",
+      "auth/invalid-credential":"Email or password is incorrect.",
+      "auth/too-many-requests":"Too many attempts. Please wait and try again later."
+    };
+    error.textContent=messages[err.code] || "Sign-in failed. Please check your email and password.";
+  });
+}
+function logout(){auth.signOut()}
+function isAdmin(){return !!auth.currentUser}
+
+auth.onAuthStateChanged(user=>{
+  const loginView=document.getElementById("loginView");
+  const app=document.getElementById("app");
+  if(user){
+    currentRole="admin";
+    document.getElementById("publicView").classList.add("hidden");
+    loginView.classList.add("hidden");
+    app.classList.remove("hidden");
+    document.getElementById("accessBadge").textContent="Admin mode";
+    startAdminDataListener();
+  }else{
+    currentRole="viewer";
+    stopAdminDataListener();
+    app.classList.add("hidden");
+    loginView.classList.add("hidden");
+    showPublicView();
+  }
+});
+function showPage(id){["homePage","gradePage","classPage"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
+function addTeacherPhoto(id){
+  if(currentRole!=="admin") return;
+  const t=data.teachers.find(x=>x.id===id);
+  if(!t) return;
+  const input=document.createElement("input");
+  input.type="file";
+  input.accept="image/*";
+  input.style.display="none";
+  document.body.appendChild(input);
+  input.onchange=()=>{
+    const file=input.files[0];
+    if(!file){ input.remove(); return; }
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const max=500;
+        const scale=Math.min(1,max/Math.max(img.width,img.height));
+        const canvas=document.createElement("canvas");
+        canvas.width=Math.max(1,Math.round(img.width*scale));
+        canvas.height=Math.max(1,Math.round(img.height*scale));
+        const ctx=canvas.getContext("2d");
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        t.photo=canvas.toDataURL("image/jpeg",0.82);
+        save();
+        renderTeachers();
+        input.remove();
+      };
+      img.onerror=()=>{alert("Could not load the selected image.");input.remove();};
+      img.src=reader.result;
+    };
+    reader.onerror=()=>{
+      alert("Could not read the image.");
+      input.remove();
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+function renderTeachers(){
+const actions=document.getElementById("teacherActions");
+actions.innerHTML=isAdmin()
+ ? '<button class="btn secondary" onclick="openInstituteNameModal()">Edit Institute Name</button><button class="btn" onclick="openTeacherModal()">+ Add Teacher</button>'
+ : '';
+const g=document.getElementById("teacherGrid");
+g.innerHTML=data.teachers.map(t=>`<div class="card click-card" onclick="openTeacher(${t.id})">
+  <div class="avatar" style="overflow:hidden">${t.photo?`<img src="${t.photo}" alt="${esc(t.name)}" style="width:100%;height:100%;object-fit:cover;display:block">`:initials(t.name)}</div>
+  <h3>${esc(t.name)}</h3>
+  <p>${t.grades.length} grade${t.grades.length===1?"":"s"}</p>
+  ${isAdmin()?`<button class="btn secondary" style="margin-top:12px" onclick="event.stopPropagation();openEditTeacherModal(${t.id})">Edit Name</button>
+        <button class="btn small" onclick="event.stopPropagation();addTeacherPhoto(${t.id})">${t.photo?"Change Photo":"Add Photo"}</button>`:""}
+</div>`).join("");
+}
+function openTeacher(id){currentTeacherId=id;const t=data.teachers.find(x=>x.id===id);document.getElementById("teacherTitle").textContent=t.name;
+document.getElementById("gradeActions").innerHTML=isAdmin()?'<button class="btn" onclick="openGradeModal()">+ Add Grade</button>':'';
+document.getElementById("gradeGrid").innerHTML=t.grades.map(g=>`<div class="card click-card" onclick="openGrade(${g.id})"><div class="avatar">G</div><h3>${esc(g.name)}</h3><p>${g.students.length} student${g.students.length===1?"":"s"} · Rs. ${fmt(g.fee)}/month</p></div>`).join("");showPage("gradePage")}
+function openGrade(id){currentGradeId=id;const t=data.teachers.find(x=>x.id===currentTeacherId),g=t.grades.find(x=>x.id===id);document.getElementById("classTitle").textContent=g.name;
+document.getElementById("classSub").textContent=`${t.name} · Monthly fee: Rs. ${fmt(g.fee)}`;
+document.getElementById("classActions").innerHTML=isAdmin()?'<button class="btn secondary" onclick="openStudentModal()">+ Add Student</button><button class="btn danger" onclick="openRemoveStudentModal()">− Remove Student</button><button class="btn" onclick="openFeeModal()">Set Monthly Fee</button>':'';
+renderClass(g);showPage("classPage")}
+function renderClass(g){
+ const tbody=document.getElementById("studentTable");
+ tbody.innerHTML=g.students.length ? g.students.map((s,i)=>`<tr><td class="student-name"><span style="display:inline-block;min-width:28px;font-weight:800;color:var(--muted)">${i+1}.</span>${esc(s.name)}</td>${s.status.map((v,m)=>`<td><button ${isAdmin()?"":"disabled"} class="status ${v===1?"paid":v===2?"attn":""}" onclick="cycleStatus(${s.id},${m})">${v===1?"✓":v===2?"!":""}</button></td>`).join("")}</tr>`).join("") : `<tr><td colspan="13" style="padding:30px;color:var(--muted);text-align:center">No students yet. Click <b>+ Add Student</b> to add one.</td></tr>`;
+
+ const hasStudents=g.students.length>0;
+ const monthly=months.map((_,m)=>{let c=0;g.students.forEach(s=>{if(s.status[m]===1)c+=g.fee});return c});
+ const pendingMonthly=months.map((_,m)=>g.students.filter(s=>s.status[m]===2).length*g.fee);
+ const collected=monthly.reduce((a,b)=>a+b,0);
+ const pending=pendingMonthly.reduce((a,b)=>a+b,0);
+ drawCharts(monthly,pendingMonthly,collected,pending,hasStudents);
+}
+
+function cycleStatus(sid,m){
+ if(!isAdmin()) return;
+ const g=getGrade(),s=g.students.find(x=>x.id===sid);
+ s.status[m]=(s.status[m]+1)%3;save();renderClass(g)
+}
+
+function getGrade(){return data.teachers.find(t=>t.id===currentTeacherId).grades.find(g=>g.id===currentGradeId)}
+function drawCharts(collected,pending,collectedTotal,pendingTotal,hasStudents){
+ const incomeBox=document.getElementById("incomeChart").parentElement;
+ const feeBox=document.getElementById("feeChart").parentElement;
+ if(incomeChart){incomeChart.destroy();incomeChart=null;}
+ if(feeChart){feeChart.destroy();feeChart=null;}
+ if(!hasStudents){
+   incomeBox.innerHTML='<div style="height:330px;display:grid;place-items:center;color:var(--muted);text-align:center">No fee data yet.<br>Add a student to start the fee graph.</div>';
+   feeBox.innerHTML='<div style="height:330px;display:grid;place-items:center;color:var(--muted);text-align:center">No fee data yet.<br>Add a student to start the fee status graph.</div>';
+   return;
+ }
+ incomeBox.innerHTML='<canvas id="incomeChart"></canvas>';
+ feeBox.innerHTML='<canvas id="feeChart"></canvas>';
+ incomeChart=new Chart(document.getElementById("incomeChart"),{
+  type:"bar",
+  data:{labels:months,datasets:[
+    {label:"Collected",data:collected},
+    {label:"Pending",data:pending}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom"},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+": Rs. "+Number(ctx.raw).toLocaleString("en-US");}}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>"Rs. "+Number(v).toLocaleString("en-US")}}},onClick:function(event,activeElements){
+    if(!activeElements.length) return;
+    const monthIndex=activeElements[0].index;
+    const month=months[monthIndex];
+    feeChart.data.datasets[0].data=[collected[monthIndex],pending[monthIndex]];
+    feeChart.options.plugins.title={display:true,text:month+" Fee Status"};
+    feeChart.update();
+  }}
+ });
+ feeChart=new Chart(document.getElementById("feeChart"),{
+  type:"pie",
+  data:{labels:["Collected","Pending"],datasets:[{data:[collectedTotal,pendingTotal]}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:"All Months Fee Status"},legend:{position:"bottom"},tooltip:{callbacks:{label:function(ctx){return ctx.label+": Rs. "+Number(ctx.raw).toLocaleString("en-US");}}}}}
+ });
+}
+
+function removeStudent(sid){
+ if(!isAdmin()) return;
+ const g=getGrade();
+ const index=g.students.findIndex(s=>s.id===sid);
+ if(index===-1) return;
+ const student=g.students[index];
+ if(!confirm(`Remove ${student.name}? This will also remove their fee/payment records.`)) return;
+ g.students.splice(index,1);
+ save();
+ renderClass(g);
+}
+
+function openModal(title,body,onSave){document.getElementById("modalTitle").textContent=title;document.getElementById("modalBody").innerHTML=body;document.getElementById("modalSave").onclick=()=>{onSave();closeModal()};document.getElementById("modal").classList.remove("hidden")}
+function closeModal(){document.getElementById("modal").classList.add("hidden")}
+function openInstituteNameModal(){
+openModal("Change Institute Name",`<div class="form-row"><label>Institute name</label><input id="newInstituteName" value="${esc(data.institute)}" placeholder="Institute name"></div>`,()=>{
+ const n=document.getElementById("newInstituteName").value.trim();
+ if(!n)return;
+ data.institute=n;
+ document.getElementById("brandName").textContent=n;
+ document.title=n;
+ save();
+ renderTeachers();
+});
+}
+function openEditTeacherModal(id){
+const t=data.teachers.find(x=>x.id===id);
+if(!t)return;
+openModal("Change Teacher Name",`<div class="form-row"><label>Teacher name</label><input id="editTeacherName" value="${esc(t.name)}" placeholder="Teacher name"></div>`,()=>{
+ const n=document.getElementById("editTeacherName").value.trim();
+ if(!n)return;
+ t.name=n;
+ save();
+ renderTeachers();
+ if(currentTeacherId===id) document.getElementById("teacherTitle").textContent=n;
+});
+}
+function openTeacherModal(){openModal("Add Teacher",`<div class="form-row"><label>Teacher name</label><input id="newName" placeholder="Teacher name"></div>`,()=>{let n=document.getElementById("newName").value.trim();if(!n)return;data.teachers.push({id:Date.now(),name:n,grades:[]});save();renderTeachers()})}
+function openGradeModal(){openModal("Add Grade",`<div class="form-row"><label>Grade name</label><input id="newName" placeholder="Grade 12"></div><div class="form-row"><label>Monthly fee (Rs.)</label><input id="newFee" type="number" value="2000"></div>`,()=>{let n=document.getElementById("newName").value.trim(),f=Number(document.getElementById("newFee").value)||0;if(!n)return;data.teachers.find(t=>t.id===currentTeacherId).grades.push({id:Date.now(),name:n,fee:f,students:[]});save();openTeacher(currentTeacherId)})}
+function openStudentModal(){openModal("Add Student",`<div class="form-row"><label>Student name</label><input id="newName" placeholder="Student name"></div>`,()=>{let n=document.getElementById("newName").value.trim();if(!n)return;getGrade().students.push({id:Date.now(),name:n,status:Array(12).fill(0)});save();renderClass(getGrade())})}
+function openRemoveStudentModal(){if(!isAdmin())return;const g=getGrade();if(!g.students.length){alert("There are no students to remove.");return;}openModal("Remove Student",`<div class="form-row"><label>Select student</label><select id="removeStudentId">${g.students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>`,()=>{const id=Number(document.getElementById("removeStudentId").value);const s=g.students.find(x=>x.id===id);if(!s)return;if(!confirm(`Remove ${s.name}? This will also remove their fee/payment records.`))return;g.students=g.students.filter(x=>x.id!==id);save();renderClass(g);openTeacher(currentTeacherId);openGrade(currentGradeId);})}
+function openFeeModal(){openModal("Set Monthly Fee",`<div class="form-row"><label>Monthly fee for every student (Rs.)</label><input id="newFee" type="number" value="${getGrade().fee}"></div>`,()=>{getGrade().fee=Number(document.getElementById("newFee").value)||0;save();openGrade(currentGradeId)})}
+function money(n){return "Rs. "+fmt(n)} function fmt(n){return Number(n).toLocaleString("en-US")}
+function initials(s){return s.split(/\s+/).map(x=>x[0]).slice(0,2).join("").toUpperCase()}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+</script>
+</body>
+</html>
